@@ -1,0 +1,31 @@
+name: livewakeword-train
+
+resources:
+  cloud: nebius
+  accelerators: H100:1
+  cpus: 8+
+  memory: 32+
+  disk_size: 100
+
+workdir: .
+
+file_mounts:
+  /outputs:
+    source: nebius://wakeword-model-bucket
+    mode: MOUNT
+
+setup: |
+  sudo apt-get update && sudo apt-get install -y espeak-ng libsndfile1 ffmpeg sox
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  export PATH="$HOME/.cargo/bin:$PATH"
+  uv sync --extra train --extra export
+  uv run livewakeword setup
+
+run: |
+  export PATH="$HOME/.cargo/bin:$PATH"
+  uv run livewakeword run configs/${CONFIG_FILE}
+  cp -r output/* /outputs/${MODEL_NAME}/
+
+envs:
+  CONFIG_FILE: hey_livekit.yaml
+  MODEL_NAME: hey_livekit

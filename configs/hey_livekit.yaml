@@ -1,0 +1,40 @@
+model_name: hey_livekit
+target_phrases: ["hey livekit", "hey live kit"]
+
+# Data generation
+n_samples: 10000
+n_samples_val: 2000
+tts_batch_size: 50
+custom_negative_phrases:
+  - "hey libby"
+  - "hey livid"
+  - "hey lidocaine"
+  - "play live"
+  - "they live"
+  - "hey look at"
+
+# Paths
+data_dir: ./data
+output_dir: ./output
+
+# Augmentation
+augmentation:
+  batch_size: 16
+  rounds: 2
+  background_paths: [./data/backgrounds]
+  rir_paths: [./data/rirs]
+
+# Model
+model:
+  model_type: dnn
+  model_size: medium
+
+# Training
+steps: 50000
+learning_rate: 0.0001
+max_negative_weight: 1500
+target_fp_per_hour: 0.2
+batch_n_per_class:
+  positive: 50
+  adversarial_negative: 50
+  ACAV100M_sample: 1024
