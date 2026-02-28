@@ -1,9 +1,9 @@
 # Export & Inference
 
-The export stage converts the trained PyTorch classifier to ONNX for deployment. The inference API provides `Model` for prediction and `Listener` for async microphone detection.
+The export stage converts the trained PyTorch classifier to ONNX for deployment. The inference API provides `WakeWordModel` for prediction and `WakeWordListener` for async microphone detection.
 
-**Source:** `src/livewakeword/export/onnx.py`, `src/livewakeword/inference/model.py`, `src/livewakeword/inference/listener.py`
-**CLI:** `livewakeword export <config>`
+**Source:** `src/livekit/wakeword/export/onnx.py`, `src/livekit/wakeword/inference/model.py`, `src/livekit/wakeword/inference/listener.py`
+**CLI:** `livekit-wakeword export <config>`
 
 ## ONNX Export
 
@@ -30,7 +30,7 @@ output/<model_name>/
 └── embedding_model.onnx        # Frozen speech-embedding CNN
 ```
 
-The mel-spectrogram and speech-embedding models are copied from `data/models/` (where `livewakeword setup` placed them). They cannot be fused into a single ONNX graph because they are separate pre-trained models.
+The mel-spectrogram and speech-embedding models are copied from `data/models/` (where `livekit-wakeword setup` placed them). They cannot be fused into a single ONNX graph because they are separate pre-trained models.
 
 ### INT8 Quantization
 
@@ -42,7 +42,7 @@ The mel-spectrogram and speech-embedding models are copied from `data/models/` (
 Enable via the `--quantize` flag:
 
 ```bash
-livewakeword export configs/hey_jarvis.yaml --quantize
+livekit-wakeword export configs/hey_jarvis.yaml --quantize
 ```
 
 ### Export Entry Point
@@ -51,16 +51,16 @@ livewakeword export configs/hey_jarvis.yaml --quantize
 
 ## Inference API
 
-**Source:** `src/livewakeword/inference/model.py`, `src/livewakeword/inference/listener.py`
+**Source:** `src/livekit/wakeword/inference/model.py`, `src/livekit/wakeword/inference/listener.py`
 
-### Model
+### WakeWordModel
 
-The `Model` class provides a simple prediction API for wake word detection.
+The `WakeWordModel` class provides a simple prediction API for wake word detection.
 
 ```python
-from livewakeword import Model
+from livekit.wakeword import WakeWordModel
 
-model = Model(wakeword_models=["hey_livekit.onnx"])
+model = WakeWordModel(models=["hey_livekit.onnx"])
 
 # Feed audio frames (16kHz, int16 or float32)
 scores = model.predict(audio_frame)
@@ -70,8 +70,8 @@ scores = model.predict(audio_frame)
 #### Initialization
 
 ```python
-Model(
-    wakeword_models: list[str | Path] | None = None,  # Paths to ONNX classifiers
+WakeWordModel(
+    models: list[str | Path] | None = None,  # Paths to ONNX classifiers
     inference_framework: str = "onnx"                  # Only "onnx" supported
 )
 ```
@@ -92,18 +92,18 @@ Feature extraction models (`melspectrogram.onnx`, `embedding_model.onnx`) are bu
 - **Frame size:** Multiples of 80ms (1280 samples) recommended
 - **Buffering:** Internal sliding window handles accumulation
 
-### Listener
+### WakeWordListener
 
-The `Listener` class provides async microphone detection with debouncing.
+The `WakeWordListener` class provides async microphone detection with debouncing.
 
 ```python
 import asyncio
-from livewakeword import Model, Listener
+from livekit.wakeword import WakeWordModel, WakeWordListener
 
-model = Model(wakeword_models=["hey_livekit.onnx"])
+model = WakeWordModel(models=["hey_livekit.onnx"])
 
 async def main():
-    async with Listener(model, threshold=0.5, debounce=2.0) as listener:
+    async with WakeWordListener(model, threshold=0.5, debounce=2.0) as listener:
         while True:
             detection = await listener.wait_for_detection()
             print(f"Detected {detection.name}! ({detection.confidence:.2f})")
@@ -114,8 +114,8 @@ asyncio.run(main())
 #### Initialization
 
 ```python
-Listener(
-    model: Model,            # Model instance with loaded classifiers
+WakeWordListener(
+    model: WakeWordModel,    # WakeWordModel instance with loaded classifiers
     threshold: float = 0.5,  # Detection threshold (0-1)
     debounce: float = 2.0    # Minimum seconds between detections
 )

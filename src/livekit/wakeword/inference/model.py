@@ -8,22 +8,22 @@ from pathlib import Path
 
 import numpy as np
 
-from livewakeword.models.feature_extractor import MelSpectrogramFrontend, SpeechEmbedding
-from livewakeword.resources import get_embedding_model_path, get_mel_model_path
+from livekit.wakeword.models.feature_extractor import MelSpectrogramFrontend, SpeechEmbedding
+from livekit.wakeword.resources import get_embedding_model_path, get_mel_model_path
 
 logger = logging.getLogger(__name__)
 
 SAMPLE_RATE = 16000
 
 
-class Model:
+class WakeWordModel:
     """Simple API for wake word detection, similar to openwakeword.
 
     Example usage:
-        from livewakeword import Model
+        from livekit.wakeword import WakeWordModel
 
         # Load wake word model(s)
-        model = Model(wakeword_models=["path/to/model.onnx"])
+        model = WakeWordModel(models=["path/to/model.onnx"])
 
         # Get audio frame (16-bit 16kHz PCM, multiples of 80ms recommended)
         frame = get_audio_frame()
@@ -35,18 +35,14 @@ class Model:
 
     def __init__(
         self,
-        wakeword_models: list[str | Path] | None = None,
-        inference_framework: str = "onnx",
+        models: list[str | Path] | None = None,
     ):
         """Initialize the wake word detection model.
 
         Args:
-            wakeword_models: List of paths to wake word ONNX classifier models.
+            models: List of paths to wake word ONNX classifier models.
                 If None, no models are loaded (call load_model() later).
-            inference_framework: Inference framework to use (only "onnx" supported).
         """
-        if inference_framework != "onnx":
-            raise ValueError(f"Unsupported inference framework: {inference_framework}")
 
         # Load bundled feature extraction models
         mel_path = get_mel_model_path()
@@ -55,12 +51,12 @@ class Model:
         if not mel_path.exists():
             raise FileNotFoundError(
                 f"Bundled mel model not found: {mel_path}\n"
-                "This should not happen - please reinstall livewakeword."
+                "This should not happen - please reinstall livekit-wakeword."
             )
         if not embedding_path.exists():
             raise FileNotFoundError(
                 f"Bundled embedding model not found: {embedding_path}\n"
-                "This should not happen - please reinstall livewakeword."
+                "This should not happen - please reinstall livekit-wakeword."
             )
 
         self._mel_frontend = MelSpectrogramFrontend(onnx_path=mel_path)
@@ -78,8 +74,8 @@ class Model:
         self._last_scores: dict[str, float] = {}
 
         # Load provided models
-        if wakeword_models:
-            for model_path in wakeword_models:
+        if models:
+            for model_path in models:
                 self.load_model(model_path)
 
     def load_model(self, model_path: str | Path, model_name: str | None = None) -> None:
